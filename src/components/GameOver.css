@@ -1,0 +1,56 @@
+.gameOver {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.gameOver h2 {
+  margin-bottom: 20px;
+}
+
+.gameOver button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.wumpusScreen {
+  width: 50%;
+  height: 53%;
+  background-image: url('/wumpus.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: fixed;
+  top: 43%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.pitScreen {
+  width: 50%;
+  height: 53%;
+  background-image: url('/pit.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: fixed;
+  top: 43%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.successScreen {
+  width: 50%;
+  height: 53%;
+  background-image: url('/success.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: fixed;
+  top: 43%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
