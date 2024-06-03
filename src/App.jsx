@@ -3,6 +3,7 @@ import GameBoard from './components/GameBoard';
 import Controls from './components/Controls';
 import GameOver from './components/GameOver';
 import BoardDisplay from './components/BoardDisplay';
+import ScoreBoard from './components/ScoreBoard';
 import './App.css';
 
 const size = 4;
@@ -28,8 +29,34 @@ const initializeBoard = () => {
   return board;
 };
 
+const initializeScoreBoard = (goldPosition) => {
+  const board = Array(size).fill(0).map((_, x) =>
+    Array(size).fill(0).map((_, y) =>
+      calculateHeuristic({ x, y }, goldPosition)
+    )
+  );
+  return board;
+};
+
+const calculateHeuristic = (position, goldPosition) => {
+  if (position.x === goldPosition.x && position.y === goldPosition.y) {
+    return 1000;
+  }
+  const distance = Math.abs(position.x - goldPosition.x) + Math.abs(position.y - goldPosition.y);
+  return 10 - distance; // Example heuristic: closer to gold gets higher score
+};
+
 const updateBoard = (board, position, symbol) => {
   board[position.x][position.y] = symbol;
+};
+
+const getAdjacentPositions = (position) => {
+  return [
+    { x: position.x - 1, y: position.y },
+    { x: position.x + 1, y: position.y },
+    { x: position.x, y: position.y - 1 },
+    { x: position.x, y: position.y + 1 }
+  ].filter(pos => pos.x >= 0 && pos.x < size && pos.y >= 0 && pos.y < size);
 };
 
 const App = () => {
@@ -46,16 +73,10 @@ const App = () => {
   const [gameSuccess, setGameSuccess] = useState(false);
   const [agentBoard, setAgentBoard] = useState(initializeBoard());
   const [actualBoard, setActualBoard] = useState(initializeBoard());
+  const [scoreBoard, setScoreBoard] = useState(initializeScoreBoard(goldPosition));
+  const [visitedPositions, setVisitedPositions] = useState([]);
 
   useEffect(() => {
-    const getAdjacentPositions = (position) => {
-      return [
-        { x: position.x - 1, y: position.y },
-        { x: position.x + 1, y: position.y },
-        { x: position.x, y: position.y - 1 },
-        { x: position.x, y: position.y + 1 }
-      ].filter(pos => pos.x >= 0 && pos.x < size && pos.y >= 0 && pos.y < size);
-    };
     setStenchPositions(getAdjacentPositions(wumpusPosition));
     setBreezePositions(getAdjacentPositions(pitPosition));
   }, [wumpusPosition, pitPosition]);
@@ -71,23 +92,28 @@ const App = () => {
   }, [wumpusPosition, pitPosition, goldPosition, stenchPositions, breezePositions]);
 
   const updateAgentPosition = (x, y) => {
+    const prevPosition = { ...agentPosition };
     setAgentPosition({ x, y });
 
     if (x === wumpusPosition.x && y === wumpusPosition.y) {
       setGameOver(true);
       setShowWumpus(true);
       setShowpit(false);
+      return;
     } else if (x === pitPosition.x && y === pitPosition.y) {
       setGameOver(true);
       setShowpit(true);
       setShowWumpus(false);
+      return;
     } else if (x === goldPosition.x && y === goldPosition.y && !hasGold) {
       setHasGold(true);
     } else if (x === 0 && y === 0 && hasGold) {
       setGameSuccess(true);
     }
 
-    // Update agent's board knowledge
+    const newVisitedPositions = [...visitedPositions, { x, y }];
+    setVisitedPositions(newVisitedPositions);
+
     const newAgentBoard = [...agentBoard];
     if (newAgentBoard[x][y] === 0) {
       if (stenchPositions.some(pos => pos.x === x && pos.y === y)) {
@@ -99,10 +125,62 @@ const App = () => {
       }
     }
     setAgentBoard(newAgentBoard);
-    console.log("Agent Board:");
-    console.table(newAgentBoard);
-    console.log("Actual Board:");
-    console.table(actualBoard);
+
+    const newScoreBoard = scoreBoard.map(row => [...row]);
+
+    const adjacentPositions = getAdjacentPositions({ x, y });
+    if (stenchPositions.some(pos => pos.x === x && pos.y === y) || breezePositions.some(pos => pos.x === x && pos.y === y)) {
+      adjacentPositions.forEach(pos => {
+        if (!(pos.x === prevPosition.x && pos.y === prevPosition.y)) {
+          newScoreBoard[pos.x][pos.y] -= 5;
+        }
+      });
+    } else {
+      adjacentPositions.forEach(pos => {
+        if (!(pos.x === prevPosition.x && pos.y === prevPosition.y)) {
+          newScoreBoard[pos.x][pos.y] += 10;
+        }
+      });
+    }
+
+    newScoreBoard[x][y] -= 3;  // 방문한 칸의 점수를 -3로 감소
+    setScoreBoard(newScoreBoard);
+  };
+
+  const executeAI = async () => {
+    let currentPosition = agentPosition;
+    const path = [currentPosition];
+
+    while (!(currentPosition.x === goldPosition.x && currentPosition.y === goldPosition.y)) {
+      const adjacentPositions = getAdjacentPositions(currentPosition);
+      const nextPosition = adjacentPositions.reduce((bestPos, pos) => {
+        if (!bestPos) return pos;
+        return scoreBoard[pos.x][pos.y] > scoreBoard[bestPos.x][bestPos.y] ? pos : bestPos;
+      }, null);
+
+      if (!nextPosition) break;
+
+      path.push(nextPosition);
+      currentPosition = nextPosition;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      updateAgentPosition(currentPosition.x, currentPosition.y);
+
+      if (currentPosition.x === goldPosition.x && currentPosition.y === goldPosition.y) {
+        setHasGold(true);
+        break;
+      }
+    }
+
+    for (let i = path.length - 2; i >= 0; i--) {
+      const { x, y } = path[i];
+      await new Promise(resolve => setTimeout(resolve, 500));
+      updateAgentPosition(x, y);
+
+      if (x === 0 && y === 0) {
+        setGameSuccess(true);
+        break;
+      }
+    }
   };
 
   const moveUp = () => {
@@ -144,6 +222,8 @@ const App = () => {
     setHasGold(false);
     setGameSuccess(false);
     setAgentBoard(initializeBoard());
+    setScoreBoard(initializeScoreBoard(goldPosition));
+    setVisitedPositions([]);
   };
 
   return (
@@ -159,7 +239,7 @@ const App = () => {
           wumpusPosition={wumpusPosition}
           pitPosition={pitPosition}
         />
-        <Controls moveUp={moveUp} moveDown={moveDown} moveLeft={moveLeft} moveRight={moveRight} />
+        <Controls moveUp={moveUp} moveDown={moveDown} moveLeft={moveLeft} moveRight={moveRight} executeAI={executeAI} />
       </div>
       <GameOver
         gameOver={gameOver}
@@ -170,8 +250,8 @@ const App = () => {
         startNewGame={startNewGame}
       />
       <div className="boardContainer">
-        <h3>Agent Board</h3>
-        <BoardDisplay board={agentBoard} />
+        <h3>Score Board</h3>
+        <ScoreBoard board={scoreBoard} />
         <h3>Actual Board</h3>
         <BoardDisplay board={actualBoard} />
       </div>

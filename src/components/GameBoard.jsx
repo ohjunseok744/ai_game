@@ -10,11 +10,16 @@ const GameBoard = ({ size, agentPosition, goldPosition, hasGold, stenchPositions
     const isStench = stenchPositions.some(pos => pos.x === x && pos.y === y);
     const isBreeze = breezePositions.some(pos => pos.x === x && pos.y === y);
 
+    let className = 'cell';
+    if (isAgent) className += ' agent-cell';
+    if (isGold) className += ' gold-cell';
+    if (isWumpus) className += ' wumpus-cell';
+    if (isPit) className += ' pit-cell';
+    if (isStench) className += ' stench-cell';
+    if (isBreeze) className += ' breeze-cell';
+
     return (
-      <div
-        className={`cell ${isAgent ? 'agent-cell' : ''} ${isStench ? 'stench-cell' : ''} ${isBreeze ? 'breeze-cell' : ''}`}
-        key={`${x}-${y}`}
-      >
+      <div className={className} key={`${x}-${y}`}>
         {isAgent && <div className="agent"></div>}
         {isGold && <div className="gold"></div>}
         {isWumpus && <div className="wumpus"></div>}
