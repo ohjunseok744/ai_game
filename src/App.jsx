@@ -8,6 +8,7 @@ import './App.css';
 
 const size = 4;
 
+// 게임 보드 내에서 랜덤한 위치를 얻는 함수
 const getRandomPosition = () => {
   return {
     x: Math.floor(Math.random() * size),
@@ -15,6 +16,7 @@ const getRandomPosition = () => {
   };
 };
 
+// 기존 위치를 피하여 고유한 랜덤 위치를 얻는 함수
 const getUniqueRandomPosition = (existingPositions) => {
   let newPosition;
   do {
@@ -23,12 +25,14 @@ const getUniqueRandomPosition = (existingPositions) => {
   return newPosition;
 };
 
+// 4x4 그리드로 게임 보드를 초기화하고 초기 에이전트 위치를 설정하는 함수
 const initializeBoard = () => {
   const board = Array(size).fill(0).map(() => Array(size).fill(0));
-  board[0][0] = 'E'; // Fix the 0,0 position to 'E'
+  board[0][0] = 'E'; // 0,0 위치를 'E'로 설정
   return board;
 };
 
+// 금의 위치를 기준으로 휴리스틱 값을 사용하여 점수판을 초기화하는 함수
 const initializeScoreBoard = (goldPosition) => {
   const board = Array(size).fill(0).map((_, x) =>
     Array(size).fill(0).map((_, y) =>
@@ -38,18 +42,21 @@ const initializeScoreBoard = (goldPosition) => {
   return board;
 };
 
+// 금의 위치를 기준으로 각 셀의 휴리스틱 점수를 계산하는 함수
 const calculateHeuristic = (position, goldPosition) => {
   if (position.x === goldPosition.x && position.y === goldPosition.y) {
     return 1000;
   }
   const distance = Math.abs(position.x - goldPosition.x) + Math.abs(position.y - goldPosition.y);
-  return 10 - distance; // Example heuristic: closer to gold gets higher score
+  return 10 - distance; // 금에 가까울수록 높은 점수
 };
 
+// 보드의 특정 위치에 심볼을 업데이트하는 함수
 const updateBoard = (board, position, symbol) => {
   board[position.x][position.y] = symbol;
 };
 
+// 특정 위치의 인접한 위치들을 얻는 함수
 const getAdjacentPositions = (position) => {
   return [
     { x: position.x - 1, y: position.y },
@@ -68,41 +75,49 @@ const App = () => {
   const [breezePositions, setBreezePositions] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [showWumpus, setShowWumpus] = useState(false);
-  const [showpit, setShowpit] = useState(false);
+  const [showPit, setShowPit] = useState(false);
   const [hasGold, setHasGold] = useState(false);
   const [gameSuccess, setGameSuccess] = useState(false);
   const [agentBoard, setAgentBoard] = useState(initializeBoard());
   const [actualBoard, setActualBoard] = useState(initializeBoard());
   const [scoreBoard, setScoreBoard] = useState(initializeScoreBoard(goldPosition));
   const [visitedPositions, setVisitedPositions] = useState([]);
+  const [wumpusAlive, setWumpusAlive] = useState(true); // 추가 상태
+  const [arrowPosition, setArrowPosition] = useState(null); // 화살 위치 상태
 
+  // Wumpus와 Pit 위치에 따라 Stench와 Breeze 위치를 설정
   useEffect(() => {
     setStenchPositions(getAdjacentPositions(wumpusPosition));
     setBreezePositions(getAdjacentPositions(pitPosition));
   }, [wumpusPosition, pitPosition]);
 
+  // Wumpus, Pit, Gold 및 관련 위치에 따라 실제 보드를 업데이트
   useEffect(() => {
     const newActualBoard = initializeBoard();
-    updateBoard(newActualBoard, wumpusPosition, 'W');
+    if (wumpusAlive) {
+      updateBoard(newActualBoard, wumpusPosition, 'W');
+    }
     updateBoard(newActualBoard, pitPosition, 'P');
     updateBoard(newActualBoard, goldPosition, 'G');
     stenchPositions.forEach(pos => updateBoard(newActualBoard, pos, 'S'));
     breezePositions.forEach(pos => updateBoard(newActualBoard, pos, 'B'));
     setActualBoard(newActualBoard);
-  }, [wumpusPosition, pitPosition, goldPosition, stenchPositions, breezePositions]);
+  }, [wumpusPosition, pitPosition, goldPosition, stenchPositions, breezePositions, wumpusAlive]);
 
+  // 에이전트 위치를 업데이트하는 함수
   const updateAgentPosition = (x, y) => {
     const prevPosition = { ...agentPosition };
     setAgentPosition({ x, y });
 
-    if (x === wumpusPosition.x && y === wumpusPosition.y) {
+    // 게임 오버 조건
+    if (wumpusAlive && x === wumpusPosition.x && y === wumpusPosition.y) {
       setGameOver(true);
       setShowWumpus(true);
-      setShowpit(false);
+      setShowPit(false);
       return;
     } else if (x === pitPosition.x && y === pitPosition.y) {
       setGameOver(true);
-      setShowpit(true);
+      setShowPit(true);
       setShowWumpus(false);
       return;
     } else if (x === goldPosition.x && y === goldPosition.y && !hasGold) {
@@ -118,10 +133,11 @@ const App = () => {
     if (newAgentBoard[x][y] === 0) {
       if (stenchPositions.some(pos => pos.x === x && pos.y === y)) {
         newAgentBoard[x][y] = 'S';
+        shootArrow({ x, y });
       } else if (breezePositions.some(pos => pos.x === x && pos.y === y)) {
         newAgentBoard[x][y] = 'B';
       } else {
-        newAgentBoard[x][y] = 'E'; // E for empty
+        newAgentBoard[x][y] = 'E'; // 빈 칸을 'E'로 설정
       }
     }
     setAgentBoard(newAgentBoard);
@@ -143,10 +159,35 @@ const App = () => {
       });
     }
 
-    newScoreBoard[x][y] -= 3;  // 방문한 칸의 점수를 -3로 감소
+    newScoreBoard[x][y] -= 3; // 방문한 칸의 점수를 -3로 감소
     setScoreBoard(newScoreBoard);
   };
 
+  // 화살을 쏘는 함수
+  const shootArrow = (position) => {
+    const adjacentPositions = getAdjacentPositions(position);
+    const lowestScorePosition = adjacentPositions.reduce((lowest, pos) => {
+      if (!lowest) return pos;
+      return scoreBoard[pos.x][pos.y] < scoreBoard[lowest.x][lowest.y] ? pos : lowest;
+    }, null);
+
+    if (lowestScorePosition) {
+      setArrowPosition(lowestScorePosition);
+      setTimeout(() => {
+        setArrowPosition(null);
+        if (lowestScorePosition.x === wumpusPosition.x && lowestScorePosition.y === wumpusPosition.y) {
+          setWumpusAlive(false);
+          const newActualBoard = initializeBoard();
+          updateBoard(newActualBoard, pitPosition, 'P');
+          updateBoard(newActualBoard, goldPosition, 'G');
+          breezePositions.forEach(pos => updateBoard(newActualBoard, pos, 'B'));
+          setActualBoard(newActualBoard);
+        }
+      }, 500);
+    }
+  };
+
+  // AI 실행 함수
   const executeAI = async () => {
     let currentPosition = agentPosition;
     const path = [currentPosition];
@@ -162,7 +203,7 @@ const App = () => {
 
       path.push(nextPosition);
       currentPosition = nextPosition;
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       updateAgentPosition(currentPosition.x, currentPosition.y);
 
       if (currentPosition.x === goldPosition.x && currentPosition.y === goldPosition.y) {
@@ -183,6 +224,7 @@ const App = () => {
     }
   };
 
+  // 에이전트를 위로 이동시키는 함수
   const moveUp = () => {
     if (gameOver || gameSuccess) return;
     let { x, y } = agentPosition;
@@ -190,6 +232,7 @@ const App = () => {
     updateAgentPosition(x, y);
   };
 
+  // 에이전트를 아래로 이동시키는 함수
   const moveDown = () => {
     if (gameOver || gameSuccess) return;
     let { x, y } = agentPosition;
@@ -197,6 +240,7 @@ const App = () => {
     updateAgentPosition(x, y);
   };
 
+  // 에이전트를 왼쪽으로 이동시키는 함수
   const moveLeft = () => {
     if (gameOver || gameSuccess) return;
     let { x, y } = agentPosition;
@@ -204,6 +248,7 @@ const App = () => {
     updateAgentPosition(x, y);
   };
 
+  // 에이전트를 오른쪽으로 이동시키는 함수
   const moveRight = () => {
     if (gameOver || gameSuccess) return;
     let { x, y } = agentPosition;
@@ -211,6 +256,7 @@ const App = () => {
     updateAgentPosition(x, y);
   };
 
+  // 새로운 게임을 시작하는 함수
   const startNewGame = () => {
     setAgentPosition({ x: 0, y: 0 });
     setWumpusPosition(getUniqueRandomPosition([{ x: 0, y: 0 }]));
@@ -218,12 +264,14 @@ const App = () => {
     setGoldPosition(getUniqueRandomPosition([{ x: 0, y: 0 }, wumpusPosition, pitPosition]));
     setGameOver(false);
     setShowWumpus(false);
-    setShowpit(false);
+    setShowPit(false);
     setHasGold(false);
     setGameSuccess(false);
     setAgentBoard(initializeBoard());
     setScoreBoard(initializeScoreBoard(goldPosition));
     setVisitedPositions([]);
+    setWumpusAlive(true);
+    setArrowPosition(null);
   };
 
   return (
@@ -238,13 +286,15 @@ const App = () => {
           breezePositions={breezePositions}
           wumpusPosition={wumpusPosition}
           pitPosition={pitPosition}
+          wumpusAlive={wumpusAlive}
+          arrowPosition={arrowPosition}
         />
         <Controls moveUp={moveUp} moveDown={moveDown} moveLeft={moveLeft} moveRight={moveRight} executeAI={executeAI} />
       </div>
       <GameOver
         gameOver={gameOver}
         showWumpus={showWumpus}
-        showpit={showpit}
+        showPit={showPit}
         gameSuccess={gameSuccess}
         resetGame={startNewGame}
         startNewGame={startNewGame}
