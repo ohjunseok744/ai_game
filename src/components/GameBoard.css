@@ -51,9 +51,11 @@
   background-image: url('/wumpus.jpg'); 
   background-size: cover;
   background-position: center;
+  z-index: 1000;
 }
 
 .pit {
+  z-index: 1000;
   width: 100%;
   height: 100%;
   background-image: url('/pit.jpg'); 
