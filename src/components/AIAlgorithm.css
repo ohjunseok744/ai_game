@@ -1,0 +1,32 @@
+.aiAlgorithm {
+    background-color: rgba(56, 136, 87, 0.7); /* 배경색을 약간 투명하게 설정 */
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    text-align: left;
+    font-family: 'Press Start 2P', cursive; /* 동일한 폰트 패밀리 사용 */
+    color: white; /* 글자 색상을 흰색으로 설정 */
+    margin-top: 20px;
+    z-index: 150; /* 다른 요소들 위에 표시되도록 z-index 설정 */
+  }
+  
+  .aiAlgorithm h2 {
+    margin-top: 0;
+    font-size: 24px; /* 제목 크기 설정 */
+  }
+  
+  .aiAlgorithm p, .aiAlgorithm ul {
+    margin: 10px 0;
+    font-size: 16px; /* 본문 글자 크기 설정 */
+  }
+  
+  .aiAlgorithm ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .aiAlgorithm li {
+    margin: 5px 0;
+    font-size: 16px; /* 항목 글자 크기 설정 */
+  }
+  

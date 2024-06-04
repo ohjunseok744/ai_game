@@ -5,6 +5,7 @@ import GameOver from './components/GameOver';
 import BoardDisplay from './components/BoardDisplay';
 import ScoreBoard from './components/ScoreBoard';
 import Rules from './components/Rules';
+import AIAlgorithm from './components/AIAlgorithm';
 import './App.css';
 
 const size = 4;
@@ -78,7 +79,7 @@ const App = () => {
   const [wumpusAlive, setWumpusAlive] = useState(true); 
   const [arrowPosition, setArrowPosition] = useState(null); 
   const [showRules, setShowRules] = useState(false); // State to toggle rules
-
+  const [showAIAlgorithm, setShowAIAlgorithm] = useState(false); // State to toggle AI Algorithm
   useEffect(() => {
     setStenchPositions(getAdjacentPositions(wumpusPosition));
     setBreezePositions(getAdjacentPositions(pitPosition));
@@ -266,7 +267,7 @@ const App = () => {
 
   return (
     <div className="App">
-      <h1>Wumpus Game</h1>
+      <h1 >Wumpus Game</h1>
       <div className="gameContainer">
         <GameBoard
           size={size}
@@ -301,10 +302,16 @@ const App = () => {
           <BoardDisplay board={actualBoard} />
         </div>
       </div>
-      <button className="rulesButton" onClick={() => setShowRules(!showRules)}>
-        {showRules ? 'Close' : 'Show Rules'}
-      </button>
+      <div className="buttonsContainer">
+        <button className="rulesButton" onClick={() => setShowRules(!showRules)}>
+          {showRules ? 'Close' : 'Show Rules'}
+        </button>
+        <button className="rulesButton" onClick={() => setShowAIAlgorithm(!showAIAlgorithm)}>
+          {showAIAlgorithm ? 'Close' : 'AI Algorithm'}
+        </button>
+      </div>
       {showRules && <Rules />}
+      {showAIAlgorithm && <AIAlgorithm />}
     </div>
   );
 };

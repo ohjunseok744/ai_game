@@ -242,3 +242,36 @@ h1{
     padding: 10px;
   }
 }
+.buttonsContainer {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.aiAlgorithm {
+  background-color: rgba(56, 136, 87, 0.7);
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 600px;
+  text-align: left;
+  font-family: 'Press Start 2P';
+  color: white;
+  margin-top: 20px;
+}
+
+.aiAlgorithm h2 {
+  margin-top: 0;
+}
+
+.aiAlgorithm p, .aiAlgorithm ul {
+  margin: 10px 0;
+}
+
+.aiAlgorithm ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.aiAlgorithm li {
+  margin: 5px 0;
+}
